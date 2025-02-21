@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATS-Friendly Resume Builder</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .form-section { margin-bottom: 30px; border-bottom: 1px solid #ccc; padding-bottom: 20px; }
+        input, textarea { width: 100%; margin-bottom: 10px; padding: 8px; }
+        .dynamic-section { margin: 15px 0; }
+        button { background: #007bff; color: white; border: none; padding: 10px 20px; cursor: pointer; margin-top: 10px; }
+        #resume-preview { margin-top: 40px; padding: 20px; background: #f9f9f9; }
+        .resume-section { margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <h1>ATS-Friendly Resume Builder</h1>
+    
+    <!-- Resume Form -->
+    <form id="resumeForm">
+        <div class="form-section">
+            <h2>Contact Information</h2>
+            <input type="text" id="name" placeholder="Full Name" required>
+            <input type="tel" id="phone" placeholder="Phone Number" required>
+            <input type="email" id="email" placeholder="Email Address" required>
+            <input type="text" id="linkedin" placeholder="LinkedIn URL">
+            <input type="text" id="github" placeholder="GitHub URL">
+        </div>
+
+        <div class="form-section">
+            <h2>Work Experience</h2>
+            <div id="work-experience-container">
+                <div class="dynamic-section">
+                    <input type="text" placeholder="Job Title" class="job-title">
+                    <input type="text" placeholder="Company Name" class="company">
+                    <input type="text" placeholder="Dates (MM/YYYY - MM/YYYY)" class="dates">
+                    <textarea placeholder="Responsibilities (one per line)" class="responsibilities" rows="4"></textarea>
+                </div>
+            </div>
+            <button type="button" onclick="addWorkExperience()">Add Another Position</button>
+        </div>
+
+        <div class="form-section">
+            <h2>Education</h2>
+            <input type="text" id="degree" placeholder="Degree Earned" required>
+            <input type="text" id="university" placeholder="University Name" required>
+            <input type="text" id="grad-date" placeholder="Graduation Date (MM/YYYY)" required>
+        </div>
+
+        <div class="form-section">
+            <h2>Skills</h2>
+            <div id="skills-container">
+                <input type="text" placeholder="Skill (e.g., Python, Project Management)" class="skill">
+            </div>
+            <button type="button" onclick="addSkill()">Add Another Skill</button>
+        </div>
+
+        <button type="button" onclick="generateResume()">Generate Resume</button>
+        <button type="button" onclick="downloadResume()">Download Resume</button>
+    </form>
+
+    <!-- Resume Preview -->
+    <div id="resume-preview"></div>
+
+    <script>
+        function addWorkExperience() {
+            const container = document.getElementById('work-experience-container');
+            const newSection = document.createElement('div');
+            newSection.className = 'dynamic-section';
+            newSection.innerHTML = `
+                <input type="text" placeholder="Job Title" class="job-title">
+                <input type="text" placeholder="Company Name" class="company">
+                <input type="text" placeholder="Dates (MM/YYYY - MM/YYYY)" class="dates">
+                <textarea placeholder="Responsibilities (one per line)" class="responsibilities" rows="4"></textarea>
+            `;
+            container.appendChild(newSection);
+        }
+
+        function addSkill() {
+            const container = document.getElementById('skills-container');
+            const newSkill = document.createElement('input');
+            newSkill.type = 'text';
+            newSkill.className = 'skill';
+            newSkill.placeholder = 'Skill (e.g., Python, Project Management)';
+            container.appendChild(newSkill);
+        }
+
+        function generateResume() {
+            const resumePreview = document.getElementById('resume-preview');
+            let resumeHTML = `
+                <h2>${document.getElementById('name').value}</h2>
+                <p>${document.getElementById('phone').value} | 
+                ${document.getElementById('email').value}</p>
+                <hr>
+
+                <div class="resume-section">
+                    <h3>Work Experience</h3>
+                    ${Array.from(document.getElementsByClassName('dynamic-section')).map(section => `
+                        <p><strong>${section.querySelector('.job-title').value}</strong><br>
+                        ${section.querySelector('.company').value} | ${section.querySelector('.dates').value}</p>
+                        <ul>${section.querySelector('.responsibilities').value.split('\n').map(line => line.trim() ? `<li>${line}</li>` : '').join('')}</ul>
+                    `).join('')}
+                </div>
+
+                <div class="resume-section">
+                    <h3>Education</h3>
+                    <p>${document.getElementById('degree').value}<br>
+                    ${document.getElementById('university').value}<br>
+                    Graduated: ${document.getElementById('grad-date').value}</p>
+                </div>
+
+                <div class="resume-section">
+                    <h3>Skills</h3>
+                    <p>${Array.from(document.getElementsByClassName('skill')).map(skill => skill.value).join(' • ')}</p>
+                </div>
+            `;
+
+            resumePreview.innerHTML = resumeHTML;
+        }
+
+        function downloadResume() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            let name = document.getElementById('name').value;
+            let phone = document.getElementById('phone').value;
+            let email = document.getElementById('email').value;
+            let linkedin = document.getElementById('linkedin').value;
+            let github = document.getElementById('github').value;
+
+            let workExperience = Array.from(document.getElementsByClassName('dynamic-section')).map(section => `
+                ${section.querySelector('.job-title').value}
+                ${section.querySelector('.company').value} | ${section.querySelector('.dates').value}
+                ${section.querySelector('.responsibilities').value.split('\n').map(line => `- ${line}`).join('\n')}
+            `).join('\n\n');
+
+            let education = `
+                ${document.getElementById('degree').value}
+                ${document.getElementById('university').value}
+                Graduated: ${document.getElementById('grad-date').value}
+            `;
+
+            let skills = Array.from(document.getElementsByClassName('skill')).map(skill => skill.value).join(', ');
+
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(16);
+            doc.text(name, 10, 10);
+
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(12);
+            doc.text(`${phone} | ${email}`, 10, 20);
+            if (linkedin) doc.text(`LinkedIn: ${linkedin}`, 10, 30);
+            if (github) doc.text(`GitHub: ${github}`, 10, 40);
+
+            doc.text("Work Experience:", 10, 50);
+            doc.text(workExperience, 10, 60);
+
+            doc.text("Education:", 10, 100);
+            doc.text(education, 10, 110);
+
+            doc.text("Skills:", 10, 130);
+            doc.text(skills, 10, 140);
+
+            doc.save("Resume.pdf");
+        }
+    </script>
+</body>
+</html>
